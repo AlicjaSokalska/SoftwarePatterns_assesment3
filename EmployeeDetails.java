@@ -1052,7 +1052,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end actionPerformed
 
 	// content pane for main dialog
-	private void createContentPane() {
+	void createContentPane() {
 		setTitle("Employee Details");
 		createRandomFile();// create random file name
 		JPanel dialog = new JPanel(new MigLayout());
