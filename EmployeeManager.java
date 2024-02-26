@@ -1,223 +1,228 @@
-package Answer;
+package Answer2;
 
-import java.awt.Color;
-import java.awt.Font;
-import java.io.File;
-import java.text.DecimalFormat;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Vector;
 
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JMenuItem;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
-import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.*;
-import java.io.File;
-import java.text.DecimalFormat;
-import java.util.Vector;
 
 public class EmployeeManager {
-	// decimal format for inactive currency text field
-		private static final DecimalFormat format = new DecimalFormat("\u20ac ###,###,##0.00");
-		// decimal format for active currency text field
-		private static final DecimalFormat fieldFormat = new DecimalFormat("0.00");
-		// hold object start position in file
-		private long currentByteStart = 0;
-		private RandomFile application = new RandomFile();
-		private static EmployeeDetails frame = new EmployeeDetails();
+	private Employee currentEmployee;
+	private long currentByteStart;
+	private RandomFile randomFile;
+	private FileManager fileManager;
 
-		// display files in File Chooser only with extension .dat
-		private FileNameExtensionFilter datfilter = new FileNameExtensionFilter("dat files (*.dat)", "dat");
-		// hold file name and path for current file in use
-		private File file;
-		// holds true or false if any changes are made for text fields
-		private boolean change = false;
-		// holds true or false if any changes are made for file content
-		boolean changesMade = false;
-		private JMenuItem open, save, saveAs, create, modify, delete, firstItem, lastItem, prevItem, searchById,
-				searchBySurname, listAll, closeApp;
-		private JButton first, previous, next, last, add, edit, deleteButton, displayAll, searchId, searchSurname,
-				saveChange, cancelChange;
-		private JComboBox<String> genderCombo, departmentCombo, fullTimeCombo;
-		private JTextField idField, ppsField, surnameField, firstNameField, salaryField;
+	public EmployeeManager(RandomFile randomFile) {
+		this.randomFile = randomFile;
+		fileManager = new FileManager(null);
+	}
+
+	public void firstRecord() {
+
+		if (randomFile.isSomeoneToDisplay()) {
+
+			randomFile.openReadFile(null);
+
+			currentByteStart = randomFile.getFirst();
+
+			currentEmployee = randomFile.readRecords(currentByteStart);
+
+			randomFile.closeReadFile();
+
+			if (currentEmployee.getEmployeeId() == 0) {
+				nextRecord();
+			}
+		} else {
+			JOptionPane.showMessageDialog(null, "No records found.");
+		}
+	}
+
+	public void previousRecord() {
+		if (randomFile != null) {
+			
+			if (randomFile.isSomeoneToDisplay()) {
+				currentByteStart = randomFile.getPrevious(currentByteStart);
+				currentEmployee = randomFile.readRecords(currentByteStart);
+			} else {
+				JOptionPane.showMessageDialog(null, "No records found.");
+			}
+		} else {
+			JOptionPane.showMessageDialog(null, "RandomFile instance is not provided.");
+		}
+	}
+
+	public void nextRecord() {
+		if (randomFile != null) {
+			if (randomFile.isSomeoneToDisplay()) {
+				currentByteStart = randomFile.getNext(currentByteStart);
+				currentEmployee = randomFile.readRecords(currentByteStart);
+			} else {
+				JOptionPane.showMessageDialog(null, "No records found.");
+			}
+		} else {
+			JOptionPane.showMessageDialog(null, "RandomFile instance is not provided.");
+		}
+	}
+
+	public void lastRecord() {
+		if (randomFile != null) {
+			currentByteStart = randomFile.getLast();
+			currentEmployee = randomFile.readRecords(currentByteStart);
+		} else {
+			JOptionPane.showMessageDialog(null, "RandomFile instance is not provided.");
+		}
+	}
+
+	public Employee searchEmployeeById(int employeeId) {
+		Employee foundEmployee = null;
+		if (randomFile != null) {
+			long byteToStart = randomFile.getFirst();
+			boolean employeeFound = false;
+
+			while (byteToStart != -1) {
+				Employee employee = randomFile.readRecords(byteToStart);
+				if (employee != null && employee.getEmployeeId() == employeeId) {
+					foundEmployee = employee;
+					employeeFound = true;
+					break;
+				}
+				byteToStart = randomFile.getNext(byteToStart);
+			}
+
+			if (!employeeFound) {
+				JOptionPane.showMessageDialog(null, "Employee with ID " + employeeId + " not found.");
+			}
+		} else {
+			JOptionPane.showMessageDialog(null, "RandomFile instance is not provided.");
+		}
+		return foundEmployee;
+	}
+
+	public ArrayList<Employee> searchEmployeeBySurname(String surname) {
+		ArrayList<Employee> foundEmployees = new ArrayList<>();
+
+		if (randomFile != null) {
+			long byteToStart = randomFile.getFirst();
+
+			
+			while (byteToStart != -1) {
+				
+				Employee employee = randomFile.readRecords(byteToStart);
+				
+				if (employee != null && employee.getSurname().equalsIgnoreCase(surname)) {
+					foundEmployees.add(employee);
+				}
+	
+				byteToStart = randomFile.getNext(byteToStart);
+			}
+
 		
-		// font for labels, text fields and combo boxes
-		Font font1 = new Font("SansSerif", Font.BOLD, 16);
-		// holds automatically generated file name
-		String generatedFileName;
-		// holds current Employee object
-		Employee currentEmployee;
-		JTextField searchByIdField, searchBySurnameField;
-		// gender combo box values
-		String[] gender = { "", "M", "F" };
-		// department combo box values
-		String[] department = { "", "Administration", "Production", "Transport", "Management" };
-		// full time combo box values
-		String[] fullTime = { "", "Yes", "No" };
+			if (foundEmployees.isEmpty()) {
+				JOptionPane.showMessageDialog(null, "No employees with surname '" + surname + "' found.");
+			}
+		} else {
+			JOptionPane.showMessageDialog(null, "RandomFile instance is not provided.");
+		}
+		return foundEmployees;
+	}
 
-    private RandomFile randomFile;
-    
-    public EmployeeManager() {
-        randomFile = new RandomFile();
-    }
+	public void addRecord(Employee newEmployee) {
+		if (fileManager != null) {
+			
+			long byteToStart = fileManager.addRecords(newEmployee);
 
-    public void addRecord(Employee newEmployee) {
-        application.openWriteFile(file.getAbsolutePath());
-        currentByteStart = application.addRecords(newEmployee);
-        application.closeWriteFile();
-    }
+		
+			JOptionPane.showMessageDialog(null, "Employee record added successfully.");
+		} else {
+			JOptionPane.showMessageDialog(null, "FileManager instance is not provided.");
+		}
+	}
 
-    private void deleteRecord() {
-        if (isSomeoneToDisplay()) {
-            int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to delete record?", "Delete",
-                    JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
-            if (returnVal == JOptionPane.YES_OPTION) {
-                application.openWriteFile(file.getAbsolutePath());
-                application.deleteRecords(currentByteStart);
-                application.closeWriteFile();
-                if (isSomeoneToDisplay()) {
-                    nextRecord();
-                    displayRecords(currentEmployee);
-                }
-            }
-        }
-    }
+	public void deleteRecord(long byteToStart) {
+		if (fileManager != null) {
+	
+			randomFile.deleteRecords(byteToStart);
 
-    private Employee getChangedDetails() {
-        boolean fullTime = false;
-        Employee theEmployee;
-        if (((String) fullTimeCombo.getSelectedItem()).equalsIgnoreCase("Yes"))
-            fullTime = true;
+		
+			JOptionPane.showMessageDialog(null, "Employee record deleted successfully.");
+		} else {
+			JOptionPane.showMessageDialog(null, "FileManager instance is not provided.");
+		}
+	}
 
-        theEmployee = new Employee(Integer.parseInt(idField.getText()), ppsField.getText().toUpperCase(),
-                surnameField.getText().toUpperCase(), firstNameField.getText().toUpperCase(),
-                genderCombo.getSelectedItem().toString().charAt(0), departmentCombo.getSelectedItem().toString(),
-                Double.parseDouble(salaryField.getText()), fullTime);
+	public void editDetails(long byteToStart, Employee newDetails) {
+		if (fileManager != null) {
+		
+			fileManager.openWriteFile();
 
-        return theEmployee;
-    }
+			fileManager.changeRecords(newDetails, byteToStart);
+			fileManager.closeWriteFile();
 
-    private Vector<Object> getAllEmployees() {
-        Vector<Object> allEmployee = new Vector<>();
-        Vector<Object> empDetails;
-        long byteStart = currentByteStart;
-        int firstId;
+			JOptionPane.showMessageDialog(null, "Employee details updated successfully.");
+		} else {
+			JOptionPane.showMessageDialog(null, "FileManager instance is not provided.");
+		}
+	}
 
-        firstRecord();
-        firstId = currentEmployee.getEmployeeId();
-        do {
-            empDetails = new Vector<>();
-            empDetails.addElement(currentEmployee.getEmployeeId());
-            empDetails.addElement(currentEmployee.getPps());
-            empDetails.addElement(currentEmployee.getSurname());
-            empDetails.addElement(currentEmployee.getFirstName());
-            empDetails.addElement(currentEmployee.getGender());
-            empDetails.addElement(currentEmployee.getDepartment());
-            empDetails.addElement(currentEmployee.getSalary());
-            empDetails.addElement(currentEmployee.getFullTime());
+	public void cancelChange() {
+		if (currentEmployee != null) {
+			displayEmployeeDetails(currentEmployee);
 
-            allEmployee.addElement(empDetails);
-            nextRecord();
-        } while (firstId != currentEmployee.getEmployeeId());
-        currentByteStart = byteStart;
+			JOptionPane.showMessageDialog(null, "Changes canceled. No modifications saved.");
+		} else {
+			JOptionPane.showMessageDialog(null, "No employee details to cancel changes for.");
+		}
+	}
 
-        return allEmployee;
-    }
+	public void displayEmployeeDetails(Employee employee) {
+		JTextField idField = new JTextField(10);
+		JTextField nameField = new JTextField(20);
+		JTextField departmentField = new JTextField(20);
+		JTextField salaryField = new JTextField(10);
 
-    public void searchEmployeeById() {
-        boolean found = false;
-        if (isSomeoneToDisplay()) {
-            firstRecord();
-            int firstId = currentEmployee.getEmployeeId();
-            if (searchByIdField.getText().trim().equals(idField.getText().trim()))
-                found = true;
-            else if (searchByIdField.getText().trim().equals(Integer.toString(currentEmployee.getEmployeeId()))) {
-                found = true;
-                displayRecords(currentEmployee);
-            } else {
-                nextRecord();
-                while (firstId != currentEmployee.getEmployeeId()) {
-                    if (Integer.parseInt(searchByIdField.getText().trim()) == currentEmployee.getEmployeeId()) {
-                        found = true;
-                        displayRecords(currentEmployee);
-                        break;
-                    } else
-                        nextRecord();
-                }
-            }
-            if (!found)
-                JOptionPane.showMessageDialog(null, "Employee not found!");
-        }
-        searchByIdField.setBackground(Color.WHITE);
-        searchByIdField.setText("");
-    }
+		idField.setText(String.valueOf(employee.getEmployeeId()));
+		nameField.setText(employee.getFirstName() + " " + employee.getSurname());
+		departmentField.setText(employee.getDepartment());
+		salaryField.setText(String.valueOf(employee.getSalary()));
+		JPanel panel = new JPanel();
+		panel.add(new JLabel("ID:"));
+		panel.add(idField);
+		panel.add(new JLabel("Name:"));
+		panel.add(nameField);
+		panel.add(new JLabel("Department:"));
+		panel.add(departmentField);
+		panel.add(new JLabel("Salary:"));
+		panel.add(salaryField);
+		JOptionPane.showMessageDialog(null, panel, "Employee Details", JOptionPane.PLAIN_MESSAGE);
+	}
 
+	Vector<Object> getAllEmployees() {
+		Vector<Object> allEmployee = new Vector<Object>();
+		Vector<Object> empDetails;
+		long byteStart = currentByteStart;
+		int firstId;
 
-	public void searchEmployeeBySurname() {
-        boolean found = false;
-        if (isSomeoneToDisplay()) {
-            firstRecord();
-            String firstSurname = currentEmployee.getSurname().trim();
-            if (searchBySurnameField.getText().trim().equalsIgnoreCase(surnameField.getText().trim()))
-                found = true;
-            else if (searchBySurnameField.getText().trim().equalsIgnoreCase(currentEmployee.getSurname().trim())) {
-                found = true;
-                displayRecords(currentEmployee);
-            } else {
-                nextRecord();
-                while (!firstSurname.trim().equalsIgnoreCase(currentEmployee.getSurname().trim())) {
-                    if (searchBySurnameField.getText().trim().equalsIgnoreCase(currentEmployee.getSurname().trim())) {
-                        found = true;
-                        displayRecords(currentEmployee);
-                        break;
-                    } else
-                        nextRecord();
-                }
-            }
-            if (!found)
-                JOptionPane.showMessageDialog(null, "Employee not found!");
-        }
-        searchBySurnameField.setText("");
-    }
+		firstRecord();
+		firstId = currentEmployee.getEmployeeId();
+		do {
+			empDetails = new Vector<Object>();
+			empDetails.addElement(new Integer(currentEmployee.getEmployeeId()));
+			empDetails.addElement(currentEmployee.getPps());
+			empDetails.addElement(currentEmployee.getSurname());
+			empDetails.addElement(currentEmployee.getFirstName());
+			empDetails.addElement(new Character(currentEmployee.getGender()));
+			empDetails.addElement(currentEmployee.getDepartment());
+			empDetails.addElement(new Double(currentEmployee.getSalary()));
+			empDetails.addElement(new Boolean(currentEmployee.getFullTime()));
 
-    public int getNextFreeId() {
-        int nextFreeId = 0;
-        if (file.length() == 0 || !isSomeoneToDisplay())
-            nextFreeId++;
-        else {
-            lastRecord();
-            nextFreeId = currentEmployee.getEmployeeId() + 1;
-        }
-        return nextFreeId;
-    }
+			allEmployee.addElement(empDetails);
+			nextRecord();// 
+		} while (firstId != currentEmployee.getEmployeeId());
+		currentByteStart = byteStart;
 
-    public boolean isSomeoneToDisplay() {
-        return randomFile.isSomeoneToDisplay();
-    }
+		return allEmployee;
+	}
 
-    private void lastRecord() {
-    	  currentByteStart = application.getNext(currentByteStart);
-          currentEmployee = application.readRecords(currentByteStart);
-    }
-
-    private void firstRecord() {
-    	  currentByteStart = application.getNext(currentByteStart);
-          currentEmployee = application.readRecords(currentByteStart);
-    }
-
-    private void nextRecord() {
-        currentByteStart = application.getNext(currentByteStart);
-        currentEmployee = application.readRecords(currentByteStart);
-    }
-
-    private void displayRecords(Employee employee) {
-        frame.displayRecords(employee); // Call displayRecords method from EmployeeDetails
-    }
 }
-
-

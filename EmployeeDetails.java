@@ -1,4 +1,4 @@
-package Answer;
+package Answer2;
 
 
 /* * 
@@ -62,18 +62,37 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	// display files in File Chooser only with extension .dat
 	private FileNameExtensionFilter datfilter = new FileNameExtensionFilter("dat files (*.dat)", "dat");
 	// hold file name and path for current file in use
-	private File file;
+	File file;
 	// holds true or false if any changes are made for text fields
-	private boolean change = false;
+	boolean change = false;
 	// holds true or false if any changes are made for file content
 	boolean changesMade = false;
-	private JMenuItem open, save, saveAs, create, modify, delete, firstItem, lastItem, nextItem, prevItem, searchById,
-			searchBySurname, listAll, closeApp;
-	private JButton first, previous, next, last, add, edit, deleteButton, displayAll, searchId, searchSurname,
-			saveChange, cancelChange;
-	private JComboBox<String> genderCombo, departmentCombo, fullTimeCombo;
-	private JTextField idField, ppsField, surnameField, firstNameField, salaryField;
-	private static EmployeeDetails frame = new EmployeeDetails();
+	JMenuItem open;
+	JMenuItem save;
+	JMenuItem saveAs;
+	private JMenuItem create;
+	private JMenuItem modify;
+	private JMenuItem delete;
+	private JMenuItem firstItem;
+	private JMenuItem lastItem;
+	private JMenuItem nextItem;
+	private JMenuItem prevItem;
+	JMenuItem searchById;
+	private JMenuItem searchBySurname;
+	private JMenuItem listAll;
+	JMenuItem closeApp;
+	private JButton first, previous, next, last, add, edit, deleteButton, displayAll, searchId, searchSurname;
+	JButton saveChange;
+	JButton cancelChange;
+	JComboBox<String> genderCombo;
+	JComboBox<String> departmentCombo;
+	JComboBox<String> fullTimeCombo;
+	JTextField idField;
+	JTextField ppsField;
+	JTextField surnameField;
+	JTextField firstNameField;
+	JTextField salaryField;
+	static EmployeeDetails frame = new EmployeeDetails();
 	// font for labels, text fields and combo boxes
 	Font font1 = new Font("SansSerif", Font.BOLD, 16);
 	// holds automatically generated file name
@@ -87,6 +106,8 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	String[] department = { "", "Administration", "Production", "Transport", "Management" };
 	// full time combo box values
 	String[] fullTime = { "", "Yes", "No" };
+	private FileManager fileManager;
+  
 
 	// initialize menu bar
 	private JMenuBar menuBar() {
@@ -346,7 +367,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end displaySummaryDialog
 
 	// display search by ID dialog
-	private void displaySearchByIdDialog() {
+	void displaySearchByIdDialog() {
 		if (isSomeoneToDisplay())
 			new SearchByIdDialog(EmployeeDetails.this);
 	}// end displaySearchByIdDialog
@@ -358,7 +379,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end displaySearchBySurnameDialog
 
 	// find byte start in file for first active record
-	private void firstRecord() {
+	void firstRecord() {
 		// if any active record in file look for first record
 		if (isSomeoneToDisplay()) {
 			// open file for reading
@@ -396,7 +417,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end previousRecord
 
 	// find byte start in file for next active record
-	private void nextRecord() {
+	void nextRecord() {
 		// if any active record in file look for first record
 		if (isSomeoneToDisplay()) {
 			// open file for reading
@@ -417,7 +438,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end nextRecord
 
 	// find byte start in file for last active record
-	private void lastRecord() {
+	void lastRecord() {
 		// if any active record in file look for first record
 		if (isSomeoneToDisplay()) {
 			// open file for reading
@@ -578,7 +599,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end deleteDecord
 
 	// create vector of vectors with all Employee details
-	private Vector<Object> getAllEmloyees() {
+	Vector<Object> getAllEmloyees() {
 		// vector of Employee objects
 		Vector<Object> allEmployee = new Vector<Object>();
 		Vector<Object> empDetails;// vector of each employee details
@@ -625,29 +646,34 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end cancelChange
 
 	// check if any of records in file is active - ID is not 0
-	private boolean isSomeoneToDisplay() {
-		boolean someoneToDisplay = false;
-		// open file for reading
-		application.openReadFile(file.getAbsolutePath());
-		// check if any of records in file is active - ID is not 0
-		someoneToDisplay = application.isSomeoneToDisplay();
-		application.closeReadFile();// close file for reading
-		// if no records found clear all text fields and display message
-		if (!someoneToDisplay) {
-			currentEmployee = null;
-			idField.setText("");
-			ppsField.setText("");
-			surnameField.setText("");
-			firstNameField.setText("");
-			salaryField.setText("");
-			genderCombo.setSelectedIndex(0);
-			departmentCombo.setSelectedIndex(0);
-			fullTimeCombo.setSelectedIndex(0);
-			JOptionPane.showMessageDialog(null, "No Employees registered!");
-		}
-		return someoneToDisplay;
-	}// end isSomeoneToDisplay
-
+	 boolean isSomeoneToDisplay() {
+	        boolean someoneToDisplay = false;
+	        try {
+	            application.openReadFile(file.getAbsolutePath());
+	            someoneToDisplay = application.isSomeoneToDisplay();
+	        } finally {
+	            application.closeReadFile();
+	        }
+	        if (!someoneToDisplay) {
+	            clearFieldsAndDisplayMessage();
+	        }
+	        return someoneToDisplay;
+	    }
+	 
+	 private void clearFieldsAndDisplayMessage() {
+	        currentEmployee = null;
+	        idField.setText("");
+	        ppsField.setText("");
+	        surnameField.setText("");
+	        firstNameField.setText("");
+	        salaryField.setText("");
+	        genderCombo.setSelectedIndex(0);
+	        departmentCombo.setSelectedIndex(0);
+	        fullTimeCombo.setSelectedIndex(0);
+	        JOptionPane.showMessageDialog(null, "No Employees registered!");
+	    }
+	 
+	 
 	// check for correct PPS format and look if PPS already in use
 	public boolean correctPps(String pps, long currentByte) {
 		boolean ppsExist = false;
@@ -685,8 +711,11 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 		return checkFile;
 	}// end checkFileName
 
+	 /*public boolean checkFileName(File newFile) {
+	        return fileManager.checkFileName(file);
+	    }*/
 	// check if any changes text field where made
-	private boolean checkForChanges() {
+	boolean checkForChanges() {
 		boolean anyChanges = false;
 		// if changes where made, allow user to save there changes
 		if (change) {
@@ -704,7 +733,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end checkForChanges
 
 	// check for input in text fields
-	private boolean checkInput() {
+	boolean checkInput() {
 		boolean valid = true;
 		// if any of inputs are in wrong format, colour text field and display
 		// message
@@ -762,14 +791,10 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 
 	// set text field background colour to white
 	private void setToWhite() {
-		ppsField.setBackground(UIManager.getColor("TextField.background"));
-		surnameField.setBackground(UIManager.getColor("TextField.background"));
-		firstNameField.setBackground(UIManager.getColor("TextField.background"));
-		salaryField.setBackground(UIManager.getColor("TextField.background"));
-		genderCombo.setBackground(UIManager.getColor("TextField.background"));
-		departmentCombo.setBackground(UIManager.getColor("TextField.background"));
-		fullTimeCombo.setBackground(UIManager.getColor("TextField.background"));
-	}// end setToWhite
+	    AddRecordDialog addRecordDialog = new AddRecordDialog(null); // Create an instance of AddRecordDialog
+	    addRecordDialog.setToWhite(); // Call the setToWhite method
+	}
+// end setToWhite
 
 	// enable text fields for editing
 	public void setEnabled(boolean booleanValue) {
@@ -792,9 +817,10 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 		searchId.setEnabled(search);
 		searchSurname.setEnabled(search);
 	}// end setEnabled
+// end setEnabled
 
 	// open file
-	private void openFile() {
+	void openFile() {
 		final JFileChooser fc = new JFileChooser();
 		fc.setDialogTitle("Open");
 		// display files in File Chooser only with extension .dat
@@ -829,7 +855,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end openFile
 
 	// save file
-	private void saveFile() {
+	void saveFile() {
 		// if file name is generated file name, save file as 'save as' else save
 		// changes to file
 		if (file.getName().equals(generatedFileName))
@@ -862,7 +888,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end saveFile
 
 	// save changes to current Employee
-	private void saveChanges() {
+	void saveChanges() {
 		int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes to current Employee?", "Save",
 				JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
 		// if user choose to save changes, save changes
@@ -881,7 +907,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end saveChanges
 
 	// save file as 'save as'
-	private void saveFileAs() {
+	void saveFileAs() {
 		final JFileChooser fc = new JFileChooser();
 		File newFile;
 		String defaultFileName = "new_Employee.dat";
@@ -920,7 +946,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end saveFileAs
 
 	// allow to save changes to file when exiting the application
-	private void exitApp() {
+	void exitApp() {
 		// if file is not empty allow to save changes
 		if (file.length() != 0) {
 			if (changesMade) {
@@ -972,7 +998,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end getFileName
 
 	// create file with generated file name when application is opened
-	private void createRandomFile() {
+	void createRandomFile() {
 		generatedFileName = getFileName() + ".dat";
 		// assign generated file name to file
 		file = new File(generatedFileName);
@@ -1052,7 +1078,7 @@ public class EmployeeDetails extends JFrame implements ActionListener, ItemListe
 	}// end actionPerformed
 
 	// content pane for main dialog
-	void createContentPane() {
+	private void createContentPane() {
 		setTitle("Employee Details");
 		createRandomFile();// create random file name
 		JPanel dialog = new JPanel(new MigLayout());

@@ -1,234 +1,198 @@
-package Answer;
+package Answer2;
 
-import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.text.DecimalFormat;
-import java.util.Random;
 
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import java.awt.*;
-import java.awt.event.*;
-import java.text.DecimalFormat;
-import java.util.Random;
+import java.io.*;
 import javax.swing.*;
-import javax.swing.event.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
+
+import java.io.*;
+
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
+import java.io.IOException;
 
 public class FileManager {
-	private static final DecimalFormat format = new DecimalFormat("\u20ac ###,###,##0.00");
-	// decimal format for active currency text field
-	private static final DecimalFormat fieldFormat = new DecimalFormat("0.00");
-	// hold object start position in file
-	private long currentByteStart = 0;
-	private RandomFile application = new RandomFile();
-	private static EmployeeDetails frame = new EmployeeDetails();
+    private String filePath;
+    private RandomFile randomFile;
+    private boolean change;
+    private Employee currentEmployee; 
+    private long currentByteStart; 
+    private JFrame frame; 
+    private JTextField idField; 
+    private EmployeeManager employeeManager;
 
-	// display files in File Chooser only with extension .dat
-	private FileNameExtensionFilter datfilter = new FileNameExtensionFilter("dat files (*.dat)", "dat");
-	// hold file name and path for current file in use
-	private File file;
-	// holds true or false if any changes are made for text fields
-	private boolean change = false;
-	// holds true or false if any changes are made for file content
-	boolean changesMade = false;
-	private JMenuItem open, save, saveAs, create, modify, delete, firstItem, lastItem, prevItem, searchById,
-			searchBySurname, listAll, closeApp;
-	private JButton first, previous, next, last, add, edit, deleteButton, displayAll, searchId, searchSurname,
-			saveChange, cancelChange;
-	private JComboBox<String> genderCombo, departmentCombo, fullTimeCombo;
-	private JTextField idField, ppsField, surnameField, firstNameField, salaryField;
-	
-	// font for labels, text fields and combo boxes
-	Font font1 = new Font("SansSerif", Font.BOLD, 16);
-	// holds automatically generated file name
-	String generatedFileName;
-	// holds current Employee object
-	Employee currentEmployee;
-	JTextField searchByIdField, searchBySurnameField;
-	// gender combo box values
-	String[] gender = { "", "M", "F" };
-	// department combo box values
-	String[] department = { "", "Administration", "Production", "Transport", "Management" };
-	// full time combo box values
-	String[] fullTime = { "", "Yes", "No" };
-
-private RandomFile randomFile;
-    // Constructor
-    public FileManager(EmployeeDetails frame) {
-        this.frame = frame;
+    public FileManager(String filePath) {
+        this.filePath = filePath;
+        this.randomFile = new RandomFile();
+        this.employeeManager = new EmployeeManager(null);
     }
 
-    private void openFile() {
-        final JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Open");
-        fc.setFileFilter(datfilter);
-        File newFile;
+    public void createFile() {
+        randomFile.createFile(filePath);
+    }
 
-        if (file.length() != 0 || change) {
+    public void openReadFile() {
+        randomFile.openReadFile(filePath);
+    }
+
+    public void openWriteFile() {
+        randomFile.openWriteFile(filePath);
+    }
+
+    public void closeReadFile() {
+        randomFile.closeReadFile();
+    }
+
+    public void closeWriteFile() {
+        randomFile.closeWriteFile();
+    }
+
+    public boolean isSomeoneToDisplay() {
+        return randomFile.isSomeoneToDisplay();
+    }
+
+    public boolean isPpsExist(String pps, long currentByte) {
+        return randomFile.isPpsExist(pps, currentByte);
+    }
+
+    public long getLast() {
+        return randomFile.getLast();
+    }
+
+
+    public long addRecords(Employee newEmployee) {
+        long currentRecordStart = 0;
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath, true))) {
+            RandomAccessEmployeeRecord record = new RandomAccessEmployeeRecord(
+                    newEmployee.getEmployeeId(),
+                    newEmployee.getPps(),
+                    newEmployee.getSurname(),
+                    newEmployee.getFirstName(),
+                    newEmployee.getGender(),
+                    newEmployee.getDepartment(),
+                    newEmployee.getSalary(),
+                    newEmployee.getFullTime()
+            );
+
+            currentRecordStart = Paths.get(filePath).toFile().length(); 
+
+            writer.write(record.toString()); 
+            writer.newLine();
+
+            writer.flush();
+
+        } catch (IOException e) {
+            System.out.println("An error occurred while adding records to the file.");
+            e.printStackTrace();
+        }
+
+        return currentRecordStart;
+    }
+
+    public void deleteRecords(long byteStart) {
+        randomFile.deleteRecords(byteStart);
+    }
+
+
+    public Employee readRecords(long byteStart) {
+        return randomFile.readRecords(byteStart);
+    }
+
+
+
+    public void changeRecords(Employee employee, long byteStart) {
+        randomFile.changeRecords(employee, byteStart);
+    }
+    
+    public void openFile() {
+        randomFile.openReadFile(filePath);
+    }
+
+	// save file
+    void saveFile() {
+        // Check if changes have been made
+        if (change) {
             int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes?", "Save",
                     JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
+            // Save changes if the user chooses to do so
             if (returnVal == JOptionPane.YES_OPTION) {
-                saveFile();
-            }
-        }
-
-        int returnVal = fc.showOpenDialog(frame);
-        if (returnVal == JFileChooser.APPROVE_OPTION) {
-            newFile = fc.getSelectedFile();
-            if (file.getName().equals(generatedFileName))
-                file.delete();
-            file = newFile;
-            application.openReadFile(file.getAbsolutePath());
-            firstRecord();
-            displayRecords(currentEmployee);
-            application.closeReadFile();
-        }
-    }
-
-    private void saveFile() {
-        if (file.getName().equals(generatedFileName))
-            saveFileAs();
-        else {
-            if (change) {
-                int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes?", "Save",
-                        JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
-                if (returnVal == JOptionPane.YES_OPTION) {
-                    
-					if (!idField.getText().equals("")) {
-                        application.openWriteFile(file.getAbsolutePath());
-                        currentEmployee = getChangedDetails();
-                        application.changeRecords(currentEmployee, currentByteStart);
-                        application.closeWriteFile();
-                    }
+                // Check if the ID field is not empty
+                if (!idField.getText().isEmpty()) {
+                    // Open the file for writing
+                    openWriteFile();
+                    // Get the changes for the current Employee
+                    // Assuming getChangedDetails() is a method to retrieve changes made in UI
+                    currentEmployee = getChangedDetails(null, idField, idField, idField, idField, null, null, idField);
+                    // Write the changes to the file for the corresponding Employee record
+                    changeRecords(currentEmployee, currentByteStart);
+                    // Close the file for writing
+                    closeWriteFile();
                 }
             }
-            displayRecords(currentEmployee);
-            frame.setEnabled(false);
-        }
-    }
+        }}
 
-    private Employee getChangedDetails() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
-	private void saveFileAs() {
+ // get values from text fields and create Employee object
+    Employee getChangedDetails(JComboBox fullTimeCombo, JTextField idField, JTextField ppsField,
+            JTextField surnameField, JTextField firstNameField, JComboBox genderCombo,
+            JComboBox departmentCombo, JTextField salaryField) {
+ boolean fullTime = false;
+ Employee theEmployee;
+ if (fullTimeCombo.getSelectedItem() != null && fullTimeCombo.getSelectedItem().equals("Yes")) {
+ fullTime = true;
+ }
+ try {
+ int id = Integer.parseInt(idField.getText());
+ String pps = ppsField.getText().toUpperCase();
+ String surname = surnameField.getText().toUpperCase();
+ String firstName = firstNameField.getText().toUpperCase();
+ char gender = genderCombo.getSelectedItem().toString().charAt(0);
+ String department = departmentCombo.getSelectedItem().toString();
+ double salary = Double.parseDouble(salaryField.getText());
+ theEmployee = new Employee(id, pps, surname, firstName, gender, department, salary, fullTime);
+ } catch (NumberFormatException e) {
+ e.printStackTrace();
+ return null;
+ }
+ return theEmployee;
+ }
+
+	public void saveFileAs() {
         final JFileChooser fc = new JFileChooser();
-        File newFile;
-        String defaultFileName = "new_Employee.dat";
-        fc.setDialogTitle("Save As");
-        fc.setFileFilter(datfilter);
-        fc.setApproveButtonText("Save");
-        fc.setSelectedFile(new File(defaultFileName));
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("DAT files", "dat");
+        fc.setFileFilter(filter);
 
-        int returnVal = fc.showSaveDialog(frame);
+        int returnVal = fc.showSaveDialog(null);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            newFile = fc.getSelectedFile();
-            if (!checkFileName(newFile)) {
-                newFile = new File(newFile.getAbsolutePath() + ".dat");
-                application.createFile(newFile.getAbsolutePath());
-            } else
-                application.createFile(newFile.getAbsolutePath());
+            File newFile = fc.getSelectedFile();
+            String newFilePath = newFile.getAbsolutePath();
+            if (!newFilePath.toLowerCase().endsWith(".dat")) {
+                newFilePath += ".dat";
+                newFile = new File(newFilePath);
+            }
 
             try {
-                Files.copy(file.toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                if (file.getName().equals(generatedFileName))
-                    file.delete();
-                file = newFile;
+                Files.copy(new File(filePath).toPath(), newFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("File saved as: " + newFilePath);
             } catch (IOException e) {
+                System.out.println("An error occurred while saving the file as: " + newFilePath);
+                e.printStackTrace();
             }
         }
-        changesMade = false;
+    }
+    public void exitApp() {
+        System.out.println("Exiting the application...");
+        System.exit(0);
     }
 
-    private void createRandomFile() {
-        generatedFileName = getFileName() + ".dat";
-        file = new File(generatedFileName);
-        application.createFile(file.getName());
-    }
-
-    private String getFileName() {
-        String fileNameChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-";
-        StringBuilder fileName = new StringBuilder();
-        Random rnd = new Random();
-        while (fileName.length() < 20) {
-            int index = (int) (rnd.nextFloat() * fileNameChars.length());
-            fileName.append(fileNameChars.charAt(index));
-        }
-        String generatedfileName = fileName.toString();
-        return generatedfileName;
-    }
-
-    private void saveChanges() {
-        int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes to current Employee?", "Save",
-                JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
-        if (returnVal == JOptionPane.YES_OPTION) {
-            application.openWriteFile(file.getAbsolutePath());
-            currentEmployee = getChangedDetails();
-            application.changeRecords(currentEmployee, currentByteStart);
-            application.closeWriteFile();
-            changesMade = false;
-        }
-        displayRecords(currentEmployee);
-        frame.setEnabled(false);
-    }
-
-    private void exitApp() {
-        if (file.length() != 0) {
-            if (changesMade) {
-                int returnVal = JOptionPane.showOptionDialog(frame, "Do you want to save changes?", "Save",
-                        JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, null, null);
-                if (returnVal == JOptionPane.YES_OPTION) {
-                    saveFile();
-                    if (file.getName().equals(generatedFileName))
-                        file.delete();
-                    System.exit(0);
-                } else if (returnVal == JOptionPane.NO_OPTION) {
-                    if (file.getName().equals(generatedFileName))
-                        file.delete();
-                    System.exit(0);
-                }
-            } else {
-                if (file.getName().equals(generatedFileName))
-                    file.delete();
-                System.exit(0);
-            }
-        } else {
-            if (file.getName().equals(generatedFileName))
-                file.delete();
-            System.exit(0);
-        }
-    }
-    private boolean checkFileName(File file) {
-        // Implement this method to check the file name
-        return false;
-    }
-
-    private void lastRecord() {
-  	  currentByteStart = application.getNext(currentByteStart);
-        currentEmployee = application.readRecords(currentByteStart);
-  }
-
-  private void firstRecord() {
-  	  currentByteStart = application.getNext(currentByteStart);
-        currentEmployee = application.readRecords(currentByteStart);
-  }
-
-  private void nextRecord() {
-      currentByteStart = application.getNext(currentByteStart);
-      currentEmployee = application.readRecords(currentByteStart);
-  }
-
-  private void displayRecords(Employee employee) {
-      frame.displayRecords(employee); // Call displayRecords method from EmployeeDetails
-  }
-
+  
+	
 }

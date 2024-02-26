@@ -1,281 +1,271 @@
-package Answer;
+package Answer2;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Graphics;
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+import net.miginfocom.swing.MigLayout;
+
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowListener;
-import java.io.File;
 import java.text.DecimalFormat;
 
 import javax.swing.*;
-import javax.swing.event.DocumentListener;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
-import net.miginfocom.swing.MigLayout;import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
-import java.util.Random;
+import java.awt.event.*;
 
-public class GUIManager extends JFrame {
-    private static final DecimalFormat format = new DecimalFormat("\u20ac ###,###,##0.00");
-    private long currentByteStart = 0;
-    private RandomFile application = new RandomFile();
-    private static EmployeeDetails frame = new EmployeeDetails();
+public class GUIManager implements ActionListener, DocumentListener, ItemListener, WindowListener {
+	 private Controller controller;
+	 private AddRecordDialog addRecordDialog;
+	 private EventHandler eventHandler;
+	    private EmployeeDetails employeeDetails;
+	 boolean change = false;
+    private JFrame frame;
+    private JButton closeApp;
+    private JButton open;
+    private JButton save;
+    private JButton saveAs;
+    private JButton searchById;
+    private JButton searchBySurname;
+    private JTextField searchByIdField;
+    private JTextField searchBySurnameField;
+    private JButton searchId;
+    private JButton searchSurname;
+    private JButton saveChange;
+    private JButton cancelChange;
+    private JButton firstItem;
+    private JButton prevItem;
+    private JButton nextItem;
+    private JButton lastItem;
+    private JButton listAll;
+    private JButton create;
+    private JButton modify;
+    private JButton delete;
+    private JTextArea textArea;
+	
 
-    private FileNameExtensionFilter datfilter = new FileNameExtensionFilter("dat files (*.dat)", "dat");
-    private File file;
-    private boolean change = false;
-    boolean changesMade = false;
-    private JMenuItem open, save, saveAs, create, modify, delete, firstItem, lastItem, nextItem, prevItem, searchById,
-            searchBySurname, listAll, closeApp;
-    private JButton first, previous, next, last, add, edit, deleteButton, displayAll, searchId, searchSurname,
-            saveChange, cancelChange;
-    private JComboBox<String> genderCombo, departmentCombo, fullTimeCombo;
-    private JTextField idField, ppsField, surnameField, firstNameField, salaryField;
+    public GUIManager(Controller controller) {
+        this.controller = controller;
+      
+        initializeComponents();
+    }
 
-    Font font1 = new Font("SansSerif", Font.BOLD, 16);
-    String generatedFileName;
-    Employee currentEmployee;
-    JTextField searchByIdField, searchBySurnameField;
-    String[] gender = {"", "M", "F"};
-    String[] department = {"", "Administration", "Production", "Transport", "Management"};
-    String[] fullTime = {"", "Yes", "No"};
-
+  
+    private void initializeComponents() {
+       eventHandler= new EventHandler(null);
+        addRecordDialog = new AddRecordDialog(null);
+      employeeDetails = new EmployeeDetails();
+    }
     public GUIManager() {
-        createAndShowGUI();
+    	 initializeComponents();
+        frame = new JFrame();
+        closeApp = new JButton("Close");
+        open = new JButton("Open");
+        save = new JButton("Save");
+        saveAs = new JButton("Save As");
+        searchById = new JButton("Search by ID");
+        searchBySurname = new JButton("Search by Surname");
+        searchByIdField = new JTextField();
+        searchBySurnameField = new JTextField();
+        searchId = new JButton("Search ID");
+        searchSurname = new JButton("Search Surname");
+        saveChange = new JButton("Save Change");
+        cancelChange = new JButton("Cancel Change");
+        firstItem = new JButton("First");
+        prevItem = new JButton("Previous");
+        nextItem = new JButton("Next");
+        lastItem = new JButton("Last");
+        listAll = new JButton("List All");
+        create = new JButton("Create");
+        modify = new JButton("Modify");
+        delete = new JButton("Delete");
+        textArea = new JTextArea();
+
+        // Set up frame and add components
+        frame.setTitle("Employee Details");
+        frame.setSize(760, 600);
+        frame.setLocation(250, 200);
+        frame.setLayout(new BorderLayout());
+        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(this);
+
+        JPanel topPanel = new JPanel();
+        topPanel.add(closeApp);
+        topPanel.add(open);
+        topPanel.add(save);
+        topPanel.add(saveAs);
+        topPanel.add(searchById);
+        topPanel.add(searchByIdField);
+        topPanel.add(searchId);
+        topPanel.add(searchBySurname);
+        topPanel.add(searchBySurnameField);
+        topPanel.add(searchSurname);
+        topPanel.add(saveChange);
+        topPanel.add(cancelChange);
+
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.add(firstItem);
+        bottomPanel.add(prevItem);
+        bottomPanel.add(nextItem);
+        bottomPanel.add(lastItem);
+        bottomPanel.add(listAll);
+        bottomPanel.add(create);
+        bottomPanel.add(modify);
+        bottomPanel.add(delete);
+
+        frame.add(topPanel, BorderLayout.NORTH);
+        frame.add(new JScrollPane(textArea), BorderLayout.CENTER);
+        frame.add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private void createContentPane() {
-        setTitle("Employee Details");
-        createRandomFile();
-        JPanel dialog = new JPanel(new MigLayout());
-
-        setJMenuBar(menuBar());
-        dialog.add(searchPanel(), "width 400:400:400, growx, pushx");
-        dialog.add(navigPanel(), "width 150:150:150, wrap");
-        dialog.add(buttonPanel(), "growx, pushx, span 2,wrap");
-        dialog.add(detailsPanel(), "gap top 30, gap left 150, center");
-
-        JScrollPane scrollPane = new JScrollPane(dialog);
-        getContentPane().add(scrollPane, BorderLayout.CENTER);
-        addWindowListener((WindowListener) this);
+    @Override
+    public void actionPerformed(ActionEvent e) {
+       
+        eventHandler.actionPerformed(e);
     }
 
-    private void createRandomFile() {
-		// TODO Auto-generated method stub
+
+    @Override
+    public void changedUpdate(DocumentEvent d) {
+        if (d.getDocument() == searchByIdField.getDocument() || d.getDocument() == searchBySurnameField.getDocument()) {
+            if (searchByIdField.getText().isEmpty() && searchBySurnameField.getText().isEmpty()) {
+                // Both search fields are empty, disable the search buttons
+                searchId.setEnabled(false);
+                searchSurname.setEnabled(false);
+            } else {
+                // At least one search field has text, enable the search buttons
+                searchId.setEnabled(true);
+                searchSurname.setEnabled(true);
+            }
+        }
+    }
+
+
+    @Override
+    public void insertUpdate(DocumentEvent d) {
+         if (d.getDocument() == searchByIdField.getDocument() || d.getDocument() == searchBySurnameField.getDocument()) {
+            if (searchByIdField.getText().length() > 0 || searchBySurnameField.getText().length() > 0) {
+                // At least one search field has text, enable the search buttons
+                searchId.setEnabled(true);
+                searchSurname.setEnabled(true);
+            } else {
+                // Both search fields are empty, disable the search buttons
+                searchId.setEnabled(false);
+                searchSurname.setEnabled(false);
+            }
+        }
+    }
+
+
+    @Override
+    public void removeUpdate(DocumentEvent d) {
+        if (d.getDocument() == searchByIdField.getDocument() || d.getDocument() == searchBySurnameField.getDocument()) {
+            if (searchByIdField.getText().length() > 0 || searchBySurnameField.getText().length() > 0) {
+                // At least one search field still has text, keep the search buttons enabled
+                searchId.setEnabled(true);
+                searchSurname.setEnabled(true);
+            } else {
+                // Both search fields are empty, disable the search buttons
+                searchId.setEnabled(false);
+                searchSurname.setEnabled(false);
+            }
+        }
+    }
+
+
+    @Override
+    public void itemStateChanged(ItemEvent e) {
+       
+        if (e.getSource() == listAll) {
+            // If the "List All" button or item state changes
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                // If the button or item is selected
+                controller.displayAllEmployees(); // Call a method in the controller to display all employees
+            }
+        }
+    }
+
+    public void windowOpened(WindowEvent e) {}
+
+    @Override
+    public void windowClosing(WindowEvent e) {
+        if (checkInput() && !checkForChanges()) {
+            controller.exitApp();
+        }
+    }
+
+
+
+
+
+	boolean checkForChanges() {
+		 return employeeDetails.checkForChanges();
+	}
+
+
+	public void windowClosed(WindowEvent e) {}
+
+    public void windowIconified(WindowEvent e) {}
+
+    public void windowDeiconified(WindowEvent e) {}
+
+    public void windowActivated(WindowEvent e) {}
+
+    public void windowDeactivated(WindowEvent e) {}
+
+    public void setEnabled(boolean b) {
+
+        closeApp.setEnabled(b);
+        open.setEnabled(b);
+        save.setEnabled(b);
+        saveAs.setEnabled(b);
+        searchById.setEnabled(b);
+        searchBySurname.setEnabled(b);
+        searchByIdField.setEnabled(b);
+        searchBySurnameField.setEnabled(b);
+        searchId.setEnabled(b);
+        searchSurname.setEnabled(b);
+        saveChange.setEnabled(b);
+        cancelChange.setEnabled(b);
+        firstItem.setEnabled(b);
+        prevItem.setEnabled(b);
+        nextItem.setEnabled(b);
+        lastItem.setEnabled(b);
+        listAll.setEnabled(b);
+        create.setEnabled(b);
+        modify.setEnabled(b);
+        delete.setEnabled(b);
+    }
+    public boolean checkInput() {
+        boolean valid = true;
+        
+        // Check input fields in AddRecordDialog
+        if (addRecordDialog != null) {
+            valid = addRecordDialog.checkInput();
+        } else {
+           
+            System.err.println("Error: AddRecordDialog is null or not initialized");
+            valid = false; // Set valid to false as a fallback
+        }
+        
+    
+        
+        return valid;
+    }
+
+
+
+	public void setToWhite() {
+		addRecordDialog.setToWhite() ;
 		
 	}
 
-	private static void createAndShowGUI() {
-        frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        frame.createContentPane();
-        frame.setSize(760, 600);
-        frame.setLocation(250, 200);
-        frame.setVisible(true);
-    }
 
-    private JMenuBar menuBar() {
-        JMenuBar menuBar = new JMenuBar();
-        JMenu fileMenu, recordMenu, navigateMenu, closeMenu;
-
-        fileMenu = new JMenu("File");
-        fileMenu.setMnemonic(KeyEvent.VK_F);
-        recordMenu = new JMenu("Records");
-        recordMenu.setMnemonic(KeyEvent.VK_R);
-        navigateMenu = new JMenu("Navigate");
-        navigateMenu.setMnemonic(KeyEvent.VK_N);
-        closeMenu = new JMenu("Exit");
-        closeMenu.setMnemonic(KeyEvent.VK_E);
-
-        menuBar.add(fileMenu);
-        menuBar.add(recordMenu);
-        menuBar.add(navigateMenu);
-        menuBar.add(closeMenu);
-
-        fileMenu.add(open = new JMenuItem("Open")).addActionListener((ActionListener) this);
-        open.setMnemonic(KeyEvent.VK_O);
-        open.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.CTRL_MASK));
-        fileMenu.add(save = new JMenuItem("Save")).addActionListener((ActionListener) this);
-        save.setMnemonic(KeyEvent.VK_S);
-        save.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, ActionEvent.CTRL_MASK));
-        fileMenu.add(saveAs = new JMenuItem("Save As")).addActionListener((ActionListener) this);
-        saveAs.setMnemonic(KeyEvent.VK_F2);
-        saveAs.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, ActionEvent.CTRL_MASK));
-
-        recordMenu.add(create = new JMenuItem("Create new Record")).addActionListener((ActionListener) this);
-        create.setMnemonic(KeyEvent.VK_N);
-        create.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, ActionEvent.CTRL_MASK));
-        recordMenu.add(modify = new JMenuItem("Modify Record")).addActionListener((ActionListener) this);
-        modify.setMnemonic(KeyEvent.VK_E);
-        modify.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, ActionEvent.CTRL_MASK));
-        recordMenu.add(delete = new JMenuItem("Delete Record")).addActionListener((ActionListener) this);
-
-        navigateMenu.add(firstItem = new JMenuItem("First"));
-        firstItem.addActionListener((ActionListener) this);
-        navigateMenu.add(prevItem = new JMenuItem("Previous"));
-        prevItem.addActionListener((ActionListener) this);
-        navigateMenu.add(nextItem = new JMenuItem("Next"));
-        nextItem.addActionListener((ActionListener) this);
-        navigateMenu.add(lastItem = new JMenuItem("Last"));
-        lastItem.addActionListener((ActionListener) this);
-        navigateMenu.addSeparator();
-        navigateMenu.add(searchById = new JMenuItem("Search by ID")).addActionListener((ActionListener) this);
-        navigateMenu.add(searchBySurname = new JMenuItem("Search by Surname")).addActionListener((ActionListener) this);
-        navigateMenu.add(listAll = new JMenuItem("List all Records")).addActionListener((ActionListener) this);
-
-        closeMenu.add(closeApp = new JMenuItem("Close")).addActionListener((ActionListener) this);
-        closeApp.setMnemonic(KeyEvent.VK_F4);
-        closeApp.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4, ActionEvent.CTRL_MASK));
-
-        return menuBar;
-    }
-
-    private JPanel searchPanel() {
-        JPanel searchPanel = new JPanel(new MigLayout());
-
-        searchPanel.setBorder(BorderFactory.createTitledBorder("Search"));
-        searchPanel.add(new JLabel("Search by ID:"), "growx, pushx");
-        searchPanel.add(searchByIdField = new JTextField(20), "width 200:200:200, growx, pushx");
-        searchByIdField.addActionListener((ActionListener) this);
-        searchByIdField.setDocument(new JTextFieldLimit(20));
-        searchPanel.add(searchId = new JButton("Go"), "width 35:35:35, height 20:20:20, growx, pushx, wrap");
-        searchId.addActionListener((ActionListener) this);
-        searchId.setToolTipText("Search Employee By ID");
-
-        searchPanel.add(new JLabel("Search by Surname:"), "growx, pushx");
-        searchPanel.add(searchBySurnameField = new JTextField(20), "width 200:200:200, growx, pushx");
-        searchBySurnameField.addActionListener((ActionListener) this);
-        searchBySurnameField.setDocument(new JTextFieldLimit(20));
-        searchPanel.add(searchSurname = new JButton("Go"), "width 35:35:35, height 20:20:20, growx, pushx, wrap");
-        searchSurname.addActionListener((ActionListener) this);
-        searchSurname.setToolTipText("Search Employee By Surname");
-
-        return searchPanel;
-    }
-
-    private JPanel navigPanel() {
-        JPanel navigPanel = new JPanel();
-
-        navigPanel.setBorder(BorderFactory.createTitledBorder("Navigate"));
-        navigPanel.add(first = new JButton(new ImageIcon(
-                new ImageIcon("first.png").getImage().getScaledInstance(17, 17, java.awt.Image.SCALE_SMOOTH))));
-        first.setPreferredSize(new Dimension(17, 17));
-        first.addActionListener((ActionListener) this);
-        first.setToolTipText("Display first Record");
-
-        navigPanel.add(previous = new JButton(new ImageIcon(new ImageIcon("prev.png").getImage()
-                .getScaledInstance(17, 17, java.awt.Image.SCALE_SMOOTH))));
-        previous.setPreferredSize(new Dimension(17, 17));
-        previous.addActionListener((ActionListener) this);
-        previous.setToolTipText("Display next Record");
-
-        navigPanel.add(next = new JButton(new ImageIcon(
-                new ImageIcon("next.png").getImage().getScaledInstance(17, 17, java.awt.Image.SCALE_SMOOTH))));
-        next.setPreferredSize(new Dimension(17, 17));
-        next.addActionListener((ActionListener) this);
-        next.setToolTipText("Display previous Record");
-
-        navigPanel.add(last = new JButton(new ImageIcon(
-                new ImageIcon("last.png").getImage().getScaledInstance(17, 17, java.awt.Image.SCALE_SMOOTH))));
-        last.setPreferredSize(new Dimension(17, 17));
-        last.addActionListener((ActionListener) this);
-        last.setToolTipText("Display last Record");
-
-        return navigPanel;
-    }
-
-    private JPanel buttonPanel() {
-        JPanel buttonPanel = new JPanel();
-
-        buttonPanel.add(add = new JButton("Add Record"), "growx, pushx");
-        add.addActionListener((ActionListener) this);
-        add.setToolTipText("Add new Employee Record");
-        buttonPanel.add(edit = new JButton("Edit Record"), "growx, pushx");
-        edit.addActionListener((ActionListener) this);
-        edit.setToolTipText("Edit current Employee");
-        buttonPanel.add(deleteButton = new JButton("Delete Record"), "growx, pushx, wrap");
-        deleteButton.addActionListener((ActionListener) this);
-        deleteButton.setToolTipText("Delete current Employee");
-        buttonPanel.add(displayAll = new JButton("List all Records"), "growx, pushx");
-        displayAll.addActionListener((ActionListener) this);
-        displayAll.setToolTipText("List all Registered Employees");
-
-        return buttonPanel;
-    }
-
-    private JPanel detailsPanel() {
-        JPanel empDetails = new JPanel(new MigLayout());
-        JPanel buttonPanel = new JPanel();
-        JTextField field;
-
-        empDetails.setBorder(BorderFactory.createTitledBorder("Employee Details"));
-
-        empDetails.add(new JLabel("ID:"), "growx, pushx");
-        empDetails.add(idField = new JTextField(20), "growx, pushx, wrap");
-        idField.setEditable(false);
-
-        empDetails.add(new JLabel("PPS Number:"), "growx, pushx");
-        empDetails.add(ppsField = new JTextField(20), "growx, pushx, wrap");
-
-        empDetails.add(new JLabel("Surname:"), "growx, pushx");
-        empDetails.add(surnameField = new JTextField(20), "growx, pushx, wrap");
-
-        empDetails.add(new JLabel("First Name:"), "growx, pushx");
-        empDetails.add(firstNameField = new JTextField(20), "growx, pushx, wrap");
-
-        empDetails.add(new JLabel("Gender:"), "growx, pushx");
-        empDetails.add(genderCombo = new JComboBox<String>(gender), "growx, pushx, wrap");
-
-        empDetails.add(new JLabel("Department:"), "growx, pushx");
-        empDetails.add(departmentCombo = new JComboBox<String>(department), "growx, pushx, wrap");
-
-        empDetails.add(new JLabel("Salary:"), "growx, pushx");
-        empDetails.add(salaryField = new JTextField(20), "growx, pushx, wrap");
-
-        empDetails.add(new JLabel("Full Time:"), "growx, pushx");
-        empDetails.add(fullTimeCombo = new JComboBox<String>(fullTime), "growx, pushx, wrap");
-
-        buttonPanel.add(saveChange = new JButton("Save"));
-        saveChange.addActionListener((ActionListener) this);
-        saveChange.setVisible(false);
-        saveChange.setToolTipText("Save changes");
-        buttonPanel.add(cancelChange = new JButton("Cancel"));
-        cancelChange.addActionListener((ActionListener) this);
-        cancelChange.setVisible(false);
-        cancelChange.setToolTipText("Cancel edit");
-
-        empDetails.add(buttonPanel, "span 2,growx, pushx,wrap");
-
-        for (int i = 0; i < empDetails.getComponentCount(); i++) {
-            empDetails.getComponent(i).setFont(font1);
-            if (empDetails.getComponent(i) instanceof JTextField) {
-                field = (JTextField) empDetails.getComponent(i);
-                field.setEditable(false);
-                if (field == ppsField)
-                    field.setDocument(new JTextFieldLimit(9));
-                else
-                    field.setDocument(new JTextFieldLimit(20));
-                field.getDocument().addDocumentListener((DocumentListener) this);
-            } else if (empDetails.getComponent(i) instanceof JComboBox) {
-                empDetails.getComponent(i).setBackground(Color.WHITE);
-                empDetails.getComponent(i).setEnabled(false);
-                ((JComboBox<String>) empDetails.getComponent(i)).addItemListener((ItemListener) this);
-                ((JComboBox<String>) empDetails.getComponent(i)).setRenderer(new DefaultListCellRenderer() {
-                    public void paint(Graphics g) {
-                        setForeground(new Color(65, 65, 65));
-                        super.paint(g);
-                    }
-                });
-            }
-        }
-        return empDetails;
-    }
+	
+	
 }
